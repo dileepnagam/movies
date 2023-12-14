@@ -25,11 +25,19 @@ const initializeDBAndServer = async (request, response) => {
 };
 initializeDBAndServer();
 
+const convertDbObjectToResponseObject = (dbObject) => {
+  return {
+    movieName: dbObject.movie_name,
+  };
+};
+
 //GET movies API
 app.get("/movies/", async (request, response) => {
   const getMoviesQuery = `SELECT * FROM movie ORDER BY movie_id`;
   const moviesArray = await db.all(getMoviesQuery); //all method is used to get multiple rows
-  response.send(moviesArray);
+  response.send(
+    moviesArray.map((eachMovie) => convertDbObjectToResponseObject(eachMovie))
+  );
 });
 
 //POST movie API
@@ -48,12 +56,21 @@ app.post("/movies/", async (request, response) => {
   response.send("Movie Successfully Added");
 });
 
+const dbObjToResObj = (dbObj) => {
+  return {
+    movieId: dbObj.movie_id,
+    directorId: dbObj.director_id,
+    movieName: dbObj.movie_name,
+    leadActor: dbObj.lead_actor,
+  };
+};
+
 //GET movie API
 app.get("/movies/:movieId/", async (request, response) => {
   const { movieId } = request.params;
   const getMovieQuery = `SELECT * FROM movie WHERE movie_id=${movieId}`;
   const movie = await db.get(getMovieQuery); //get method is used to get only single row
-  response.send(movie);
+  response.send(dbObjToResObj(movie));
 });
 
 //UPDATE movie API
@@ -83,20 +100,36 @@ app.delete("/movies/:movieId/", async (request, response) => {
   response.send("Movie Removed");
 });
 
+const dbOBJtoRES = (dbObj) => {
+  return {
+    directorId: dbObj.director_id,
+    directorName: dbObj.director_name,
+  };
+};
+
 //GET director API
 app.get("/directors/", async (request, response) => {
   const getDirectorsQuery = `SELECT * FROM director ORDER BY director_id`;
   const directorsArray = await db.all(getDirectorsQuery); //all method is used to get multiple rows
-  response.send(directorsArray);
+  response.send(directorsArray.map((eachDirctor) => dbOBJtoRES(eachDirctor)));
 });
+
+function obbj(obj) {
+  return {
+    movieName: obj.movie_name,
+  };
+}
 
 //GET director movies API
 app.get("/directors/:directorId/movies/", async (request, response) => {
   const { directorId } = request.params;
   const getDirectorMoviesQuery = `
-  SELECT * FROM movie WHERE director_id=${directorId};`;
+  SELECT movie_name 
+  FROM movie INNER JOIN director ON director.director_id=movie.director_id 
+  WHERE 
+  director.director_id='${directorId}'`;
   const moviesArray = await db.all(getDirectorMoviesQuery);
-  response.send(moviesArray);
+  response.send(moviesArray.map((each) => obbj(each)));
 });
 
 module.exports = app;
